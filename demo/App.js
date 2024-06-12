@@ -1,3 +1,3 @@
-import App from "./component/ToDoList";
+import App from "./component/TabDemo";
 
 export default App;
