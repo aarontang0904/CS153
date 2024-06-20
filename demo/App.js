@@ -1,3 +1,3 @@
-import App from "./component/TabDemo";
+import App from "./component/WeatherDemo";
 
 export default App;

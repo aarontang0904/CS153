@@ -8,17 +8,25 @@ import {
   FlatList,
 } from "react-native";
 
-const Item = ({ item }) => (
+const Item = ({ item, incrChanges }) => (
   <View style={styles.item}>
     <Text style={styles.itemText}>#{item.count}</Text>
     <Text style={styles.itemText}>{item.todo}</Text>
     <Text style={styles.dateText}>{item.date}</Text>
+    <Button
+      title="Done"
+      onPress={() => {
+        item["completed"] = true;
+        incrChanges();
+      }}
+    />
+    <Text>{item["completed"] ? "done" : "---"}</Text>
   </View>
 );
 
 const addTodo = (todos, setTodos, todo, setTodo, counter, setCounter) => {
   const date = new Date().toISOString().slice(0, 19).replace("T", " ");
-  const newTodo = { count: counter, todo: todo, date: date };
+  const newTodo = { count: counter, todo: todo, date: date, completed: false };
   setTodos([...todos, newTodo]);
   setTodo("");
   setCounter(counter + 1);
@@ -28,6 +36,11 @@ const ToDoList = () => {
   const [todos, setTodos] = useState([]);
   const [todo, setTodo] = useState("");
   const [counter, setCounter] = useState(1);
+  const [changes, setChanges] = useState(0);
+
+  const incrChanges = () => {
+    setChanges(changes + 1);
+  };
 
   return (
     <View style={styles.container}>
@@ -44,9 +57,12 @@ const ToDoList = () => {
         }
       />
       <FlatList
-        data={todos}
-        renderItem={({ item }) => <Item item={item} />}
-        keyExtractor={(item) => item.count.toString()}
+        data={todos.filter((item) => !item["completed"])}
+        extraData={changes}
+        renderItem={({ item }) => (
+          <Item item={item} incrChanges={incrChanges} />
+        )}
+        keyExtractor={(item) => item["title"]}
       />
     </View>
   );

@@ -13,6 +13,10 @@ const HomeScreen = ({ navigation }) => {
         title="Check my to-do list"
         onPress={() => navigation.navigate("ToDo")}
       />
+      <Button
+        title="Check my calendar"
+        onPress={() => navigation.navigate("Calendar")}
+      />
     </View>
   );
 };

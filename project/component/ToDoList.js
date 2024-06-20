@@ -7,45 +7,69 @@ import {
   Button,
   FlatList,
 } from "react-native";
+import { useValue } from "./ValueContext";
 
-const Item = ({ item }) => (
+const Item = ({ item, markAsDone }) => (
   <View style={styles.item}>
-    <Text style={styles.itemText}>#{item.count}</Text>
-    <Text style={styles.itemText}>{item.todo}</Text>
-    <Text style={styles.dateText}>{item.date}</Text>
+    <Text style={[styles.itemText, item.done && styles.doneText]}>
+      #{item.count} {item.todo}
+    </Text>
+    <Text style={styles.dueDateText}>Due: {item.dueDate}</Text>
+    <Button
+      title={item.done ? "Done" : "Mark as Done"}
+      onPress={() => markAsDone(item.count)}
+      disabled={item.done}
+    />
   </View>
 );
 
-const addTodo = (todos, setTodos, todo, setTodo, counter, setCounter) => {
-  const date = new Date().toISOString().slice(0, 19).replace("T", " ");
-  const newTodo = { count: counter, todo: todo, date: date };
-  setTodos([...todos, newTodo]);
-  setTodo("");
-  setCounter(counter + 1);
-};
-
+// Changed the signature of ToDoList component to remove local state for todos
 const ToDoList = () => {
-  const [todos, setTodos] = useState([]);
+  const { currentValue, todos, setTodos } = useValue();
   const [todo, setTodo] = useState("");
   const [counter, setCounter] = useState(1);
+  const [dueDate, setDueDate] = useState("");
+
+  const addTodo = () => {
+    const newTodo = {
+      count: counter,
+      todo: todo,
+      done: false,
+      dueDate: dueDate,
+    };
+    setTodos([...todos, newTodo]);
+    setTodo("");
+    setCounter(counter + 1);
+    setDueDate("");
+  };
+
+  const markAsDone = (count) => {
+    setTodos(
+      todos.map((todo) =>
+        todo.count === count ? { ...todo, done: true } : todo
+      )
+    );
+  };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>ToDo List</Text>
+      <Text style={styles.title}>{currentValue["username"]}'s ToDo List</Text>
       <TextInput
         style={styles.input}
+        placeholder="Enter ToDo"
         onChangeText={(text) => setTodo(text)}
         value={todo}
       />
-      <Button
-        title="Add ToDo"
-        onPress={() =>
-          addTodo(todos, setTodos, todo, setTodo, counter, setCounter)
-        }
+      <TextInput
+        style={styles.input}
+        placeholder="Due: YYYY-MM-DD"
+        onChangeText={(text) => setDueDate(text)}
+        value={dueDate}
       />
+      <Button title="Add ToDo" onPress={addTodo} />
       <FlatList
         data={todos}
-        renderItem={({ item }) => <Item item={item} />}
+        renderItem={({ item }) => <Item item={item} markAsDone={markAsDone} />}
         keyExtractor={(item) => item.count.toString()}
       />
     </View>
@@ -86,9 +110,13 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "500",
   },
-  dateText: {
-    fontSize: 12,
-    color: "#555",
+  doneText: {
+    textDecorationLine: "line-through",
+    color: "gray",
+  },
+  dueDateText: {
+    fontSize: 14,
+    color: "#ff0000",
     marginTop: 5,
   },
 });

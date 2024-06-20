@@ -4,12 +4,9 @@ export const ValueContext = createContext(null);
 
 export const ValueProvider = ({ value, children }) => {
   const [currentValue, setCurrentValue] = useState(value);
-  const [todos, setTodos] = useState([]);
 
   return (
-    <ValueContext.Provider
-      value={{ currentValue, setCurrentValue, todos, setTodos }}
-    >
+    <ValueContext.Provider value={{ currentValue, setCurrentValue }}>
       {children}
     </ValueContext.Provider>
   );

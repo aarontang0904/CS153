@@ -1,8 +1,3 @@
-import React from "react";
-import AreaCal from "./component/AreaCal";
+import App from "./component/TabDemo";
 
-const TE1 = () => {
-  return <AreaCal />;
-};
-
-export default TE1;
+export default App;
