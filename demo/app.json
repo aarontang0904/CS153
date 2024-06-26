@@ -4,5 +4,10 @@
     "slug": "demo",
     "version": "1.0.0"
   },
-  "name": "demo"
+  "name": "demo",
+  "splash": {
+    "image": "./assets/splash.png",
+    "resizeMode": "contain",
+    "backgroundColor": "#25292e"
+  }
 }
