@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   StyleSheet,
   Text,
@@ -7,28 +7,89 @@ import {
   Button,
   FlatList,
 } from "react-native";
-import { useValue } from "./ValueContext";
+import regeneratorRuntime from "regenerator-runtime";
+import storage from "./Storage";
 
-const Item = ({ item, markAsDone }) => (
-  <View style={styles.item}>
-    <Text style={[styles.itemText, item.done && styles.doneText]}>
-      #{item.count} {item.todo}
-    </Text>
-    <Text style={styles.dueDateText}>Due: {item.dueDate}</Text>
-    <Button
-      title={item.done ? "Done" : "Mark as Done"}
-      onPress={() => markAsDone(item.count)}
-      disabled={item.done}
-    />
-  </View>
-);
+storage.sync = {
+  async todos(params) {
+    try {
+      console.log("in storage.sync.todos");
+    } catch (err) {
+      console.log("error in todos.sync", err);
+    }
+  },
+};
 
-// Changed the signature of ToDoList component to remove local state for todos
 const ToDoList = () => {
-  const { currentValue, todos, setTodos } = useValue();
+  const [todos, setTodos] = useState([]);
   const [todo, setTodo] = useState("");
   const [counter, setCounter] = useState(1);
   const [dueDate, setDueDate] = useState("");
+
+  useEffect(() => {
+    getData();
+  }, []);
+
+  const getData = async () => {
+    try {
+      storage
+        .load({
+          key: "todos",
+          id: "1",
+        })
+        .then((ret) => {
+          if (ret == undefined) {
+            ret = [];
+          }
+          setTodos(ret);
+          setTodo("");
+          setCounter(ret.length ? ret[ret.length - 1].count + 1 : 1);
+          setDueDate("");
+          console.log("just read", JSON.stringify(ret));
+        })
+        .catch((err) => {
+          console.warn(err.message);
+          switch (err.name) {
+            case "NotFoundError":
+              setTodos([]);
+              setTodo("");
+              setCounter(1);
+              setDueDate("");
+              console.log("NotFoundError");
+              break;
+            case "ExpiredError":
+              console.log("ExpiredError");
+              break;
+          }
+        });
+    } catch (e) {
+      console.log("error in getData", e);
+    }
+  };
+
+  const storeData = async (value) => {
+    try {
+      await storage.save({
+        key: "todos",
+        id: "1",
+        data: value,
+        expires: 1000 * 3600 * 24, // 1 day
+      });
+      console.log("just stored", JSON.stringify(value));
+    } catch (e) {
+      console.log("error in storeData", e);
+    }
+  };
+
+  const clearAll = async () => {
+    try {
+      await storage.clearMapForKey("todos");
+      setTodos([]);
+      console.log("Cleared all todos.");
+    } catch (e) {
+      console.log("error in clearAll", e);
+    }
+  };
 
   const addTodo = () => {
     const newTodo = {
@@ -37,23 +98,49 @@ const ToDoList = () => {
       done: false,
       dueDate: dueDate,
     };
-    setTodos([...todos, newTodo]);
+    const newTodos = [...todos, newTodo];
+    setTodos(newTodos);
+    storeData(newTodos);
     setTodo("");
     setCounter(counter + 1);
     setDueDate("");
   };
 
   const markAsDone = (count) => {
-    setTodos(
-      todos.map((todo) =>
-        todo.count === count ? { ...todo, done: true } : todo
-      )
+    const updatedTodos = todos.map((todo) =>
+      todo.count === count ? { ...todo, done: true } : todo
     );
+    setTodos(updatedTodos);
+    storeData(updatedTodos);
   };
+
+  const renderTodo = ({ item }) => (
+    <View style={styles.item}>
+      <Text style={[styles.itemText, item.done && styles.doneText]}>
+        #{item.count} {item.todo}
+      </Text>
+      <Text style={styles.dueDateText}>Due: {item.dueDate}</Text>
+      <Button
+        title={item.done ? "Done" : "Mark as Done"}
+        onPress={() => markAsDone(item.count)}
+        disabled={item.done}
+      />
+    </View>
+  );
+
+  const debug = true;
+  const debugView = (
+    <View>
+      <Text style={styles.headerText}>DEBUGGING INFO</Text>
+      <Text>todo is ({todo})</Text>
+      <Text>dueDate is ({dueDate})</Text>
+      <Text>todos is {JSON.stringify(todos)}</Text>
+    </View>
+  );
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>{currentValue["username"]}'s ToDo List</Text>
+      <Text style={styles.title}>ToDo List</Text>
       <TextInput
         style={styles.input}
         placeholder="Enter ToDo"
@@ -67,11 +154,13 @@ const ToDoList = () => {
         value={dueDate}
       />
       <Button title="Add ToDo" onPress={addTodo} />
+      <Button title="Clear All" onPress={clearAll} color="red" />
       <FlatList
         data={todos}
-        renderItem={({ item }) => <Item item={item} markAsDone={markAsDone} />}
+        renderItem={renderTodo}
         keyExtractor={(item) => item.count.toString()}
       />
+      {debug && debugView}
     </View>
   );
 };
@@ -118,6 +207,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#ff0000",
     marginTop: 5,
+  },
+  headerText: {
+    textAlign: "center",
+    backgroundColor: "#aaa",
+    fontSize: 20,
+    padding: 10,
+    color: "blue",
   },
 });
 

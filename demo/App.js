@@ -1,3 +1,3 @@
-import App from "./component/CameraDemo";
+import App from "./component/Pomodoro";
 
 export default App;
