@@ -25,7 +25,6 @@ const CalendarScreen = () => {
       }
       return acc;
     }, {});
-    console.log("Formatted Todos: ", formattedTodos); // Add this line
     setItems(formattedTodos);
   }, [todos]);
 
@@ -44,7 +43,6 @@ const CalendarScreen = () => {
         selected={selectedDay}
         renderItem={renderItem}
         onDayPress={(day) => {
-          console.log("Day pressed: ", day.dateString); // Add this line
           setSelectedDay(day.dateString);
         }}
       />

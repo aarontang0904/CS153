@@ -4,16 +4,16 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import Icon from "react-native-vector-icons/Ionicons";
 
 import HomeScreen from "./component/HomeScreen";
-import SettingsScreen from "./component/SettingsScreen";
-import AboutScreen from "./component/AboutScreen";
 import ToDoList from "./component/ToDoList";
 import CalendarScreen from "./component/CalendarScreen";
-import ValueProvider from "./component/ValueContext";
+import Timer from "./component/Timer";
+import SettingsScreen from "./component/SettingsScreen";
+import { ValueProvider } from "./component/ValueContext";
 
 const Tab = createBottomTabNavigator();
 
 const App = () => {
-  let data = { username: "", password: "", loggedin: false };
+  const data = { username: "", password: "", loggedin: false };
 
   return (
     <ValueProvider value={data}>
@@ -27,10 +27,8 @@ const App = () => {
                 iconName = focused ? "home" : "home-outline";
               } else if (route.name === "ToDo") {
                 iconName = focused ? "list" : "list-outline";
-              } else if (route.name === "About") {
-                iconName = focused
-                  ? "information-circle"
-                  : "information-circle-outline";
+              } else if (route.name === "Timer") {
+                iconName = focused ? "time" : "time-outline";
               } else if (route.name === "Settings") {
                 iconName = focused ? "settings" : "settings-outline";
               } else if (route.name === "Calendar") {
@@ -60,9 +58,9 @@ const App = () => {
             options={{ headerTitle: "Calendar" }}
           />
           <Tab.Screen
-            name="About"
-            component={AboutScreen}
-            options={{ headerTitle: "About" }}
+            name="Timer"
+            component={Timer}
+            options={{ headerTitle: "Pomodoro Timer" }}
           />
           <Tab.Screen
             name="Settings"

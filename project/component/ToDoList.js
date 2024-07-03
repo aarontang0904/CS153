@@ -1,109 +1,27 @@
-import React, { useState, useEffect } from "react";
-import {
-  StyleSheet,
-  Text,
-  View,
-  TextInput,
-  Button,
-  FlatList,
-} from "react-native";
-import regeneratorRuntime from "regenerator-runtime";
-import storage from "./Storage";
-
-storage.sync = {
-  async todos(params) {
-    try {
-      console.log("in storage.sync.todos");
-    } catch (err) {
-      console.log("error in todos.sync", err);
-    }
-  },
-};
+import React, { useState } from "react";
+import { StyleSheet, Text, View, TextInput, FlatList } from "react-native";
+import { useValue } from "./ValueContext";
+import SmallButton from "./SmallButton";
 
 const ToDoList = () => {
-  const [todos, setTodos] = useState([]);
+  const { todos, setTodos } = useValue();
   const [todo, setTodo] = useState("");
-  const [counter, setCounter] = useState(1);
+  const [counter, setCounter] = useState(
+    todos?.length ? todos[todos.length - 1].count + 1 : 1
+  );
   const [dueDate, setDueDate] = useState("");
 
-  useEffect(() => {
-    getData();
-  }, []);
-
-  const getData = async () => {
-    try {
-      storage
-        .load({
-          key: "todos",
-          id: "1",
-        })
-        .then((ret) => {
-          if (ret == undefined) {
-            ret = [];
-          }
-          setTodos(ret);
-          setTodo("");
-          setCounter(ret.length ? ret[ret.length - 1].count + 1 : 1);
-          setDueDate("");
-          console.log("just read", JSON.stringify(ret));
-        })
-        .catch((err) => {
-          console.warn(err.message);
-          switch (err.name) {
-            case "NotFoundError":
-              setTodos([]);
-              setTodo("");
-              setCounter(1);
-              setDueDate("");
-              console.log("NotFoundError");
-              break;
-            case "ExpiredError":
-              console.log("ExpiredError");
-              break;
-          }
-        });
-    } catch (e) {
-      console.log("error in getData", e);
-    }
-  };
-
-  const storeData = async (value) => {
-    try {
-      await storage.save({
-        key: "todos",
-        id: "1",
-        data: value,
-        expires: 1000 * 3600 * 24, // 1 day
-      });
-      console.log("just stored", JSON.stringify(value));
-    } catch (e) {
-      console.log("error in storeData", e);
-    }
-  };
-
-  const clearAll = async () => {
-    try {
-      await storage.clearMapForKey("todos");
-      setTodos([]);
-      console.log("Cleared all todos.");
-    } catch (e) {
-      console.log("error in clearAll", e);
-    }
-  };
-
   const addTodo = () => {
-    const newTodo = {
-      count: counter,
-      todo: todo,
-      done: false,
-      dueDate: dueDate,
-    };
+    const newTodo = { count: counter, todo, done: false, dueDate };
     const newTodos = [...todos, newTodo];
     setTodos(newTodos);
-    storeData(newTodos);
     setTodo("");
     setCounter(counter + 1);
     setDueDate("");
+  };
+
+  const clearAll = () => {
+    setTodos([]);
   };
 
   const markAsDone = (count) => {
@@ -111,30 +29,21 @@ const ToDoList = () => {
       todo.count === count ? { ...todo, done: true } : todo
     );
     setTodos(updatedTodos);
-    storeData(updatedTodos);
   };
 
   const renderTodo = ({ item }) => (
-    <View style={styles.item}>
-      <Text style={[styles.itemText, item.done && styles.doneText]}>
-        #{item.count} {item.todo}
-      </Text>
-      <Text style={styles.dueDateText}>Due: {item.dueDate}</Text>
-      <Button
-        title={item.done ? "Done" : "Mark as Done"}
+    <View style={[styles.item, item.done && styles.itemDone]}>
+      <View style={styles.itemHeader}>
+        <Text style={[styles.itemText, item.done && styles.doneText]}>
+          {item.todo}
+        </Text>
+        <Text style={styles.dueDateText}>Due: {item.dueDate}</Text>
+      </View>
+      <SmallButton
+        label={item.done ? "Done" : "Mark as Done"}
         onPress={() => markAsDone(item.count)}
-        disabled={item.done}
+        color={item.done ? "gray" : "#007BFF"}
       />
-    </View>
-  );
-
-  const debug = true;
-  const debugView = (
-    <View>
-      <Text style={styles.headerText}>DEBUGGING INFO</Text>
-      <Text>todo is ({todo})</Text>
-      <Text>dueDate is ({dueDate})</Text>
-      <Text>todos is {JSON.stringify(todos)}</Text>
     </View>
   );
 
@@ -144,23 +53,26 @@ const ToDoList = () => {
       <TextInput
         style={styles.input}
         placeholder="Enter ToDo"
-        onChangeText={(text) => setTodo(text)}
+        onChangeText={setTodo}
         value={todo}
+        placeholderTextColor="#999"
       />
       <TextInput
         style={styles.input}
         placeholder="Due: YYYY-MM-DD"
-        onChangeText={(text) => setDueDate(text)}
+        onChangeText={setDueDate}
         value={dueDate}
+        placeholderTextColor="#999"
       />
-      <Button title="Add ToDo" onPress={addTodo} />
-      <Button title="Clear All" onPress={clearAll} color="red" />
+      <View style={styles.buttonRow}>
+        <SmallButton label="Add ToDo" onPress={addTodo} color="#28a745" />
+        <SmallButton label="Clear All" onPress={clearAll} color="red" />
+      </View>
       <FlatList
         data={todos}
         renderItem={renderTodo}
         keyExtractor={(item) => item.count.toString()}
       />
-      {debug && debugView}
     </View>
   );
 };
@@ -170,7 +82,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#f0f8ff",
     alignItems: "center",
-    justifyContent: "center",
     padding: 20,
   },
   title: {
@@ -185,19 +96,45 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     marginBottom: 10,
     width: "80%",
+    color: "#333",
+  },
+  buttonRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: "80%",
+    marginVertical: 20,
   },
   item: {
-    backgroundColor: "#add8e6",
+    backgroundColor: "#fff",
     padding: 20,
     marginVertical: 8,
     marginHorizontal: 16,
-    borderRadius: 10,
+    borderRadius: 15,
     borderWidth: 1,
-    borderColor: "#00008b",
+    borderColor: "#ddd",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  itemDone: {
+    backgroundColor: "#d3ffd3",
+  },
+  itemHeader: {
+    // flex: 1,
+    marginRight: 10,
   },
   itemText: {
     fontSize: 18,
-    fontWeight: "500",
+    fontWeight: "bold",
+    color: "#333",
   },
   doneText: {
     textDecorationLine: "line-through",
@@ -208,12 +145,12 @@ const styles = StyleSheet.create({
     color: "#ff0000",
     marginTop: 5,
   },
-  headerText: {
-    textAlign: "center",
-    backgroundColor: "#aaa",
-    fontSize: 20,
-    padding: 10,
-    color: "blue",
+  smallButtonContainer: {
+    flex: 1,
+    alignItems: "center",
+  },
+  smallButton: {
+    width: "45%",
   },
 });
 

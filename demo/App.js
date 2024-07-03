@@ -1,3 +1,3 @@
-import App from "./component/Pomodoro";
+import App from "./component/WordleWithFriends";
 
 export default App;
